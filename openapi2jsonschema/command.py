@@ -13,7 +13,8 @@ import sys
 from jsonref import JsonRef  # type: ignore
 import click
 
-from openapi2jsonschema.log import info, debug, error
+from openapi2jsonschema.log import info, error, debug_print
+from openapi2jsonschema.log import debug as dbg
 from openapi2jsonschema.util import (
     additional_properties,
     replace_int_or_string,
@@ -59,10 +60,16 @@ from openapi2jsonschema.errors import UnsupportedError
     help="Prohibits properties not in the schema (additionalProperties: false)",
 )
 @click.argument("schema", metavar="SCHEMA_URL")
-def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict, root: Optional[str]):
+@click.option(
+    "-d", "-v",
+    "--debug", is_flag=True, default=False, help="Enable debug output."
+)
+def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict, root: Optional[str], debug: bool):
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
     """
+    global debug_print
+    debug_print = debug
     info("Downloading schema")
     if sys.version_info < (3, 0):
         response = urllib.urlopen(schema)
@@ -161,7 +168,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict, r
         types.append(title)
 
         try:
-            debug("Processing %s" % full_name)
+            dbg("Processing %s" % full_name)
 
             # These APIs are all deprecated
             if kubernetes:
@@ -216,7 +223,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict, r
                 specification["properties"] = updated
 
             with open("%s/%s.json" % (output, full_name), "w") as schema_file:
-                debug("Generating %s.json" % full_name)
+                dbg("Generating %s.json" % full_name)
                 schema_file.write(json.dumps(specification, indent=2))
         except Exception as e:
             error("An error occured processing %s: %s" % (kind, e))
@@ -258,8 +265,8 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict, r
             specification: Dict[str, Any] = deepcopy(spec)
             specification.setdefault("type", "object")
 
-            debug(f"Merging schema for {title}:")
-            debug(f"{specification}")
+            dbg(f"Merging schema for {title}:")
+            dbg(f"{specification}")
 
             contents["definitions"][title] = rewrite_links(specification)
 
