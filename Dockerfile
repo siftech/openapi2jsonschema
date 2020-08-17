@@ -1,10 +1,14 @@
-FROM python:2-alpine
+FROM debian:stable-slim
 MAINTAINER Gareth Rushgrove "gareth@morethanseven.net"
+RUN apt update
+RUN apt install python3 python3-pip python3-venv -y
+
+RUN pip3 install poetry
 
 COPY . /src
-RUN cd src && pip install -e .
 
-WORKDIR /out
+WORKDIR /src
+RUN poetry build
+RUN poetry install
 
-ENTRYPOINT ["/usr/local/bin/openapi2jsonschema"]
-CMD ["--help"]
+ENTRYPOINT ["poetry", "run", "openapi2jsonschema"]
